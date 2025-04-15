@@ -7,6 +7,7 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 import os
 
+import torch
 
 example_smiles = [
     "CC(=O)OC1=CC=CC=C1C(=O)O",  # Aspirin
@@ -181,8 +182,9 @@ def collate_fn(batch):
     
     
 # Update DataLoader to use the custom collate_fn
-def prepare_data(image_dir, csv_file, collator_train_kwargs:dict, collator_test_kwargs: dict)
+def prepare_data(image_dir, csv_file, collator_train_kwargs:dict, collator_test_kwargs: dict):
     # Define transformations
+
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),

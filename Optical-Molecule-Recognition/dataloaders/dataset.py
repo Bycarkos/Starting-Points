@@ -5,9 +5,17 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, models
-
+import pandas as pd
+from PIL import Image
+from utils import collate_fn
 
 class MoleculeImageDataset(Dataset):
+    
+    SMILES_CHARS = ' ()[].,=#-1234567890BCFHNOPSclnors+'  # Common characters in SMILES
+    CHAR_TO_IDX = {char: idx for idx, char in enumerate(SMILES_CHARS)}
+    IDX_TO_CHAR = {idx: char for idx, char in enumerate(SMILES_CHARS)}
+    MAX_SMILES_LENGTH = 100
+    
     def __init__(self, image_dir, csv_file, transform=None):
         """
         Args:
@@ -31,13 +39,43 @@ class MoleculeImageDataset(Dataset):
         
         smiles = self.annotations.iloc[idx, 1]
         # Convert SMILES to sequence of indices
-        smiles_encoded = [CHAR_TO_IDX.get(c, 0) for c in smiles]
+        smiles_encoded = [self.CHAR_TO_IDX.get(c, 0) for c in smiles]
         # Pad if necessary
-        smiles_encoded = smiles_encoded + [0] * (MAX_SMILES_LENGTH - len(smiles_encoded))
-        smiles_encoded = smiles_encoded[:MAX_SMILES_LENGTH]  # Truncate if too long
+        smiles_encoded = smiles_encoded + [0] * (self.MAX_SMILES_LENGTH - len(smiles_encoded))
+        smiles_encoded = smiles_encoded[:self.MAX_SMILES_LENGTH]  # Truncate if too long
         
         return {
             'image': image,
             'smiles': torch.tensor(smiles_encoded, dtype=torch.long),
-            'length': min(len(smiles), MAX_SMILES_LENGTH)
+            'length': min(len(smiles), self.MAX_SMILES_LENGTH)
         }
+        
+        
+        
+if __name__ == "__main__":
+    # Define the dataset
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
+    
+
+    dataset = MoleculeImageDataset(image_dir='Optical-Molecule-Recognition/images', csv_file='Optical-Molecule-Recognition/molecules.csv', transform=transform)
+
+    # Create a data loader
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+
+    # Iterate over the data loader
+    for batch in dataloader:
+        import pdb;pdb.set_trace()
+        
+        images = batch['image']
+        smiles = batch['smiles']
+        lengths = batch['length']
+
+        # Perform some operations on the batch
+        # For example, print the shapes of the images and smiles tensors
+        print("Image shapes:", images.shape)
+        print("Smiles shapes:", smiles.shape)
+        print("Lengths:", lengths)
